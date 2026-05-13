@@ -1,0 +1,3109 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "DB API — Multitenant REST API",
+        "description": "Laravel 13 API with DDD/CQRS architecture and table-per-tenant multi-tenancy.\n\n## Authentication\nAll write endpoints require a Bearer token issued by Laravel Passport.\nObtain one via `POST /oauth/token` (standard Passport password grant).\n\n## Multitenancy\nEvery request must target a tenant via the URL `/tenant_id/v1/...`.\nTenant identifiers are 3-63 lowercase alphanumeric characters (hyphens/underscores allowed).\n\n## Module gating\nSome endpoints require the tenant to have a specific module enabled.\nIf a module is disabled, the API returns **403** with the message\n`\"Module 'X' is not enabled for this tenant\"`.\n\n## Standard response envelope\nAll endpoints return a consistent JSON envelope:\n```json\n{\n  \"success\": true,\n  \"data\": { ... },\n  \"message\": \"Operation completed successfully\"\n}\n```\nErrors replace `data` with `errors` (validation details).",
+        "contact": {
+            "email": "dev@example.com"
+        },
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "http://localhost",
+            "description": "Local development"
+        },
+        {
+            "url": "https://api.example.com",
+            "description": "Production"
+        }
+    ],
+    "paths": {
+        "/{tenant}/{version}/categories": {
+            "get": {
+                "tags": [
+                    "Blogging - Categories"
+                ],
+                "summary": "List categories (filterable, paginated)",
+                "operationId": "20227d561104337259f2a4400f8a42e6",
+                "parameters": [
+                    {
+                        "name": "tenant",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "version",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "filters",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    {
+                        "name": "order_by",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "order",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "asc",
+                                "desc"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of categories"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Blogging - Categories"
+                ],
+                "summary": "Crear una categoría",
+                "operationId": "9e5f6c30815d37b9b09c77e704bf6cfa",
+                "parameters": [
+                    {
+                        "name": "tenant",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "acme"
+                    },
+                    {
+                        "name": "version",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "v1"
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "id",
+                                    "name"
+                                ],
+                                "properties": {
+                                    "id": {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "example": "550e8400-e29b-41d4-a716-446655440010"
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Tecnología",
+                                        "maxLength": 255
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Categoría creada",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Error de validación",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/{tenant}/{version}/categories/{id}": {
+            "get": {
+                "tags": [
+                    "Blogging - Categories"
+                ],
+                "summary": "Obtener una categoría por ID",
+                "operationId": "3688a4d5b957cde9155bdaba8957f55e",
+                "parameters": [
+                    {
+                        "name": "tenant",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "acme"
+                    },
+                    {
+                        "name": "version",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "v1"
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Categoría encontrada",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/CategoryResponse"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No encontrada",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Blogging - Categories"
+                ],
+                "summary": "Actualizar una categoría",
+                "operationId": "390a5704dcab97a42cfe6a40027f0fb7",
+                "parameters": [
+                    {
+                        "name": "tenant",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "acme"
+                    },
+                    {
+                        "name": "version",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "v1"
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Nuevo nombre",
+                                        "maxLength": 255
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Categoría actualizada",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Error de validación",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/{tenant}/{version}/posts": {
+            "get": {
+                "tags": [
+                    "Blogging - Posts"
+                ],
+                "summary": "List posts (filterable, paginated)",
+                "operationId": "432df7e5b879677f91307cc3b1c7ee55",
+                "parameters": [
+                    {
+                        "name": "tenant",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "version",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "language_code",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "en"
+                    },
+                    {
+                        "name": "filters",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    {
+                        "name": "order_by",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "order",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "asc",
+                                "desc"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of posts"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Blogging - Posts"
+                ],
+                "summary": "Crear un post de blog",
+                "operationId": "99e7572cf49719ec14a7d8d69ec9a70d",
+                "parameters": [
+                    {
+                        "name": "tenant",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "acme"
+                    },
+                    {
+                        "name": "version",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "v1"
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "id",
+                                    "title",
+                                    "content",
+                                    "language"
+                                ],
+                                "properties": {
+                                    "id": {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "example": "550e8400-e29b-41d4-a716-446655440000"
+                                    },
+                                    "title": {
+                                        "type": "string",
+                                        "example": "Mi primer post con IA",
+                                        "maxLength": 255
+                                    },
+                                    "content": {
+                                        "type": "string",
+                                        "example": "La inteligencia artificial es increíble..."
+                                    },
+                                    "language": {
+                                        "type": "string",
+                                        "example": "es",
+                                        "maxLength": 5
+                                    },
+                                    "seo_title": {
+                                        "type": "string",
+                                        "nullable": true,
+                                        "maxLength": 60
+                                    },
+                                    "seo_description": {
+                                        "type": "string",
+                                        "nullable": true,
+                                        "maxLength": 160
+                                    },
+                                    "seo_keywords": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "canonical_url": {
+                                        "type": "string",
+                                        "format": "url",
+                                        "nullable": true
+                                    },
+                                    "og_title": {
+                                        "type": "string",
+                                        "nullable": true,
+                                        "maxLength": 95
+                                    },
+                                    "og_description": {
+                                        "type": "string",
+                                        "nullable": true,
+                                        "maxLength": 200
+                                    },
+                                    "og_image": {
+                                        "type": "string",
+                                        "format": "url",
+                                        "nullable": true
+                                    },
+                                    "category_id": {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "example": null,
+                                        "nullable": true
+                                    },
+                                    "tag_names": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        },
+                                        "example": [
+                                            "php",
+                                            "laravel",
+                                            "ia"
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Post creado correctamente",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Error de validación",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/{tenant}/{version}/posts/{id}": {
+            "get": {
+                "tags": [
+                    "Blogging - Posts"
+                ],
+                "summary": "Obtener un post por ID",
+                "operationId": "d43ffe85947da4d708f037492f81f14f",
+                "parameters": [
+                    {
+                        "name": "tenant",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "acme"
+                    },
+                    {
+                        "name": "version",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "v1"
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "lang",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "es"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Post encontrado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/PostResponse"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Post no encontrado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Blogging - Posts"
+                ],
+                "summary": "Actualizar un post",
+                "operationId": "b07db558b5034ca7d2419844e2d3d5af",
+                "parameters": [
+                    {
+                        "name": "tenant",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "acme"
+                    },
+                    {
+                        "name": "version",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "v1"
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "language"
+                                ],
+                                "properties": {
+                                    "language": {
+                                        "type": "string",
+                                        "example": "es",
+                                        "maxLength": 5
+                                    },
+                                    "title": {
+                                        "type": "string",
+                                        "nullable": true,
+                                        "maxLength": 255
+                                    },
+                                    "content": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "seo_title": {
+                                        "type": "string",
+                                        "nullable": true,
+                                        "maxLength": 60
+                                    },
+                                    "seo_description": {
+                                        "type": "string",
+                                        "nullable": true,
+                                        "maxLength": 160
+                                    },
+                                    "seo_keywords": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "canonical_url": {
+                                        "type": "string",
+                                        "format": "url",
+                                        "nullable": true
+                                    },
+                                    "og_title": {
+                                        "type": "string",
+                                        "nullable": true,
+                                        "maxLength": 95
+                                    },
+                                    "og_description": {
+                                        "type": "string",
+                                        "nullable": true,
+                                        "maxLength": 200
+                                    },
+                                    "og_image": {
+                                        "type": "string",
+                                        "format": "url",
+                                        "nullable": true
+                                    },
+                                    "category_id": {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "nullable": true
+                                    },
+                                    "tag_names": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        },
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Post actualizado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Error de validación",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/{tenant}/{version}/tags": {
+            "get": {
+                "tags": [
+                    "Blogging - Tags"
+                ],
+                "summary": "List tags (filterable, paginated)",
+                "operationId": "17fcfd4469a5d88f3ce6a7cb1039a3f4",
+                "parameters": [
+                    {
+                        "name": "tenant",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "version",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "filters",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    {
+                        "name": "order_by",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "order",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "asc",
+                                "desc"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of tags"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Blogging - Tags"
+                ],
+                "summary": "Crear una etiqueta",
+                "operationId": "92c488e9d6f27f0676e78c6adc3def64",
+                "parameters": [
+                    {
+                        "name": "tenant",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "acme"
+                    },
+                    {
+                        "name": "version",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "v1"
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "id",
+                                    "name",
+                                    "slug"
+                                ],
+                                "properties": {
+                                    "id": {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "example": "550e8400-e29b-41d4-a716-446655440020"
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Laravel",
+                                        "maxLength": 255
+                                    },
+                                    "slug": {
+                                        "type": "string",
+                                        "example": "laravel",
+                                        "maxLength": 255
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Tag creado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Error de validación",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/{tenant}/{version}/tags/{id}": {
+            "get": {
+                "tags": [
+                    "Blogging - Tags"
+                ],
+                "summary": "Obtener un tag por ID",
+                "operationId": "07a0ff391b8a1a3ac3f801a31b279cf0",
+                "parameters": [
+                    {
+                        "name": "tenant",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "acme"
+                    },
+                    {
+                        "name": "version",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "v1"
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Tag encontrado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/TagResponse"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No encontrado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Blogging - Tags"
+                ],
+                "summary": "Actualizar un tag",
+                "operationId": "7aff40ab9fa9cea6b539cb45235d5b0e",
+                "parameters": [
+                    {
+                        "name": "tenant",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "acme"
+                    },
+                    {
+                        "name": "version",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "v1"
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "php8",
+                                        "maxLength": 255
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Tag actualizado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Error de validación",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/{tenant}/{version}/forms": {
+            "post": {
+                "tags": [
+                    "Forms"
+                ],
+                "summary": "Create a form definition",
+                "description": "Create a new form with dynamic field definitions. Returns the persisted form id on success.",
+                "operationId": "b21374c3d125780a5ccf0c5b28ac96fc",
+                "parameters": [
+                    {
+                        "name": "tenant",
+                        "in": "path",
+                        "description": "Tenant app_id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "version",
+                        "in": "path",
+                        "description": "API version",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "key",
+                                    "fields"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "description": "Form display name",
+                                        "type": "string",
+                                        "example": "Contact Us"
+                                    },
+                                    "key": {
+                                        "description": "URL slug (lowercase alphanumeric and hyphens)",
+                                        "type": "string",
+                                        "example": "contact-us"
+                                    },
+                                    "recipient_email": {
+                                        "description": "Email to receive submissions",
+                                        "type": "string",
+                                        "format": "email",
+                                        "nullable": true
+                                    },
+                                    "active": {
+                                        "description": "Accept submissions",
+                                        "type": "boolean",
+                                        "example": true
+                                    },
+                                    "fields": {
+                                        "description": "Form fields definition",
+                                        "type": "array",
+                                        "items": {
+                                            "required": [
+                                                "name",
+                                                "label",
+                                                "type",
+                                                "required"
+                                            ],
+                                            "properties": {
+                                                "name": {
+                                                    "description": "Field variable name (snake_case)",
+                                                    "type": "string",
+                                                    "example": "email"
+                                                },
+                                                "label": {
+                                                    "type": "string",
+                                                    "example": "Email Address"
+                                                },
+                                                "type": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "text",
+                                                        "email",
+                                                        "tel",
+                                                        "textarea",
+                                                        "select",
+                                                        "checkbox"
+                                                    ]
+                                                },
+                                                "required": {
+                                                    "type": "boolean",
+                                                    "example": true
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Form created successfully"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/{tenant}/{version}/forms/{id}": {
+            "get": {
+                "tags": [
+                    "Forms"
+                ],
+                "summary": "Get form definition",
+                "description": "Retrieve form schema including field definitions. Authenticated only.",
+                "operationId": "5460ad11acc5a6b771f833948165d8d8",
+                "parameters": [
+                    {
+                        "name": "tenant",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "version",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Form ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Form found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FormResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "404": {
+                        "description": "Form not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/{tenant}/{version}/forms/{key}/submit": {
+            "post": {
+                "tags": [
+                    "Forms"
+                ],
+                "summary": "Submit form data",
+                "description": "Submit form data to a published form. Public endpoint. Subject to anti-spam checks (honeypot + rate limiting 5 per 60s per IP).",
+                "operationId": "163219493dfa7ba4a9f89b2cd3a7204b",
+                "parameters": [
+                    {
+                        "name": "tenant",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "version",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "key",
+                        "in": "path",
+                        "description": "Form key/slug",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "Form submission data — keys/values match form field definitions. Include the empty 'honeypot' field for anti-spam.",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {},
+                            "example": {
+                                "name": "John Doe",
+                                "email": "john@example.com",
+                                "message": "Hello, I have a question",
+                                "honeypot": ""
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "202": {
+                        "description": "Form submitted (async processing)"
+                    },
+                    "403": {
+                        "description": "Spam detected or rate limit exceeded or form inactive"
+                    },
+                    "404": {
+                        "description": "Form not found"
+                    },
+                    "422": {
+                        "description": "Validation failed or missing required fields"
+                    }
+                }
+            }
+        },
+        "/{tenant}/{version}/users": {
+            "post": {
+                "tags": [
+                    "Identity - Users"
+                ],
+                "summary": "Crear un usuario",
+                "operationId": "ba7d8b3dad03202f3768f41cf8f9a2af",
+                "parameters": [
+                    {
+                        "name": "tenant",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "acme"
+                    },
+                    {
+                        "name": "version",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "v1"
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "id",
+                                    "name"
+                                ],
+                                "properties": {
+                                    "id": {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "example": "550e8400-e29b-41d4-a716-446655440030"
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "example": "John Doe",
+                                        "maxLength": 255
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Usuario creado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Error de validación",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/{tenant}/{version}/users/{id}": {
+            "get": {
+                "tags": [
+                    "Identity - Users"
+                ],
+                "summary": "Obtener un usuario por ID",
+                "operationId": "58ed1f63c19da6f0062c983479851036",
+                "parameters": [
+                    {
+                        "name": "tenant",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "acme"
+                    },
+                    {
+                        "name": "version",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "v1"
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Usuario encontrado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/UserResponse"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No encontrado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Identity - Users"
+                ],
+                "summary": "Actualizar un usuario",
+                "operationId": "724a96e95773b9cc96d006c6380eb9d1",
+                "parameters": [
+                    {
+                        "name": "tenant",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "acme"
+                    },
+                    {
+                        "name": "version",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "v1"
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Jane Doe",
+                                        "maxLength": 255
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Usuario actualizado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Error de validación",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/{tenant}/{version}/languages": {
+            "get": {
+                "tags": [
+                    "Languages"
+                ],
+                "summary": "List all active languages",
+                "description": "Get all registered and active languages for this tenant. Used for translatable content (posts, pages, etc.)",
+                "operationId": "af6589ad95e05aff9fe221919744d1e7",
+                "parameters": [
+                    {
+                        "name": "tenant",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "acme"
+                    },
+                    {
+                        "name": "version",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "v1"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of active languages",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/LanguageResponse"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Languages"
+                ],
+                "summary": "Register a language",
+                "description": "Create a new language definition for translatable content. Language codes must be ISO 639-1 (2-letter codes like 'en', 'es', 'fr').",
+                "operationId": "1559fc10d49c1aac7bf5bfb3ea5e0f48",
+                "parameters": [
+                    {
+                        "name": "tenant",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "acme"
+                    },
+                    {
+                        "name": "version",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "v1"
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "id",
+                                    "code",
+                                    "name",
+                                    "native_name"
+                                ],
+                                "properties": {
+                                    "id": {
+                                        "description": "Unique language identifier",
+                                        "type": "string",
+                                        "format": "uuid"
+                                    },
+                                    "code": {
+                                        "description": "ISO 639-1 2-letter code (lowercase)",
+                                        "type": "string",
+                                        "example": "en"
+                                    },
+                                    "name": {
+                                        "description": "Language name in English",
+                                        "type": "string",
+                                        "example": "English"
+                                    },
+                                    "native_name": {
+                                        "description": "Language name in its native language",
+                                        "type": "string",
+                                        "example": "English"
+                                    },
+                                    "is_default": {
+                                        "description": "Set as tenant's default language",
+                                        "type": "boolean",
+                                        "example": false
+                                    },
+                                    "is_active": {
+                                        "description": "Available for translations",
+                                        "type": "boolean",
+                                        "example": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Language created successfully"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "422": {
+                        "description": "Validation error (invalid code format or duplicate)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/{tenant}/{version}/languages/{id}": {
+            "get": {
+                "tags": [
+                    "Languages"
+                ],
+                "summary": "Get a language by ID",
+                "description": "Retrieve a specific language definition by its UUID.",
+                "operationId": "49b4020efecf122211ea91583fd63847",
+                "parameters": [
+                    {
+                        "name": "tenant",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "acme"
+                    },
+                    {
+                        "name": "version",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "v1"
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Language UUID",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Language found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/LanguageResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not found"
+                    }
+                }
+            }
+        },
+        "/{tenant}/{version}/pages": {
+            "post": {
+                "tags": [
+                    "Pages"
+                ],
+                "summary": "Create a page with its first language translation",
+                "description": "Create a new page with block editor content and SEO metadata. Content must follow block editor schema (rows/columns/blocks). Each translation is stored in intermediate table per language.",
+                "operationId": "673a1a2cf93dc7238b2ca0a849555623",
+                "parameters": [
+                    {
+                        "name": "tenant",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "acme"
+                    },
+                    {
+                        "name": "version",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "v1"
+                    }
+                ],
+                "requestBody": {
+                    "description": "Page data with translatable fields. Content is block editor JSON.",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "id",
+                                    "status",
+                                    "language_code",
+                                    "slug",
+                                    "title",
+                                    "content"
+                                ],
+                                "properties": {
+                                    "id": {
+                                        "description": "Unique page identifier",
+                                        "type": "string",
+                                        "format": "uuid"
+                                    },
+                                    "status": {
+                                        "description": "Publication status",
+                                        "type": "string",
+                                        "example": "published",
+                                        "enum": [
+                                            "draft",
+                                            "published",
+                                            "archived"
+                                        ]
+                                    },
+                                    "language_code": {
+                                        "description": "ISO 639-1 language code",
+                                        "type": "string",
+                                        "example": "en"
+                                    },
+                                    "slug": {
+                                        "description": "URL-friendly slug (unique per language)",
+                                        "type": "string",
+                                        "example": "about-us"
+                                    },
+                                    "title": {
+                                        "description": "Page title",
+                                        "type": "string",
+                                        "example": "About Us"
+                                    },
+                                    "content": {
+                                        "description": "Block editor content (rows -> columns -> blocks)",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "seo_title": {
+                                        "type": "string",
+                                        "nullable": true,
+                                        "maxLength": 60
+                                    },
+                                    "seo_description": {
+                                        "type": "string",
+                                        "nullable": true,
+                                        "maxLength": 160
+                                    },
+                                    "seo_keywords": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "canonical_url": {
+                                        "type": "string",
+                                        "format": "url",
+                                        "nullable": true
+                                    },
+                                    "og_title": {
+                                        "type": "string",
+                                        "nullable": true,
+                                        "maxLength": 95
+                                    },
+                                    "og_description": {
+                                        "type": "string",
+                                        "nullable": true,
+                                        "maxLength": 200
+                                    },
+                                    "og_image": {
+                                        "type": "string",
+                                        "format": "url",
+                                        "nullable": true
+                                    },
+                                    "structured_data": {
+                                        "description": "JSON-LD structured data",
+                                        "type": "object",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Page created successfully"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "422": {
+                        "description": "Validation error (invalid content schema or language)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/{tenant}/{version}/pages/{id}": {
+            "get": {
+                "tags": [
+                    "Pages"
+                ],
+                "summary": "Get a page by ID in a specific language",
+                "description": "Retrieve a page in the requested language. If language translation doesn't exist, returns first available translation.",
+                "operationId": "d16f1411ef82537a10daa8549dba0cce",
+                "parameters": [
+                    {
+                        "name": "tenant",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "acme"
+                    },
+                    {
+                        "name": "version",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "v1"
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "lang",
+                        "in": "query",
+                        "description": "ISO 639-1 language code (defaults to 'en')",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "en"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Page found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PageResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Pages"
+                ],
+                "summary": "Update a page or add/update a translation",
+                "description": "Update page content for a specific language. If translation exists, updates it; if not, creates new translation. Can also update page status (core field).",
+                "operationId": "419f036d36898d2c630c739f84e22295",
+                "parameters": [
+                    {
+                        "name": "tenant",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "acme"
+                    },
+                    {
+                        "name": "version",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "v1"
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "language_code"
+                                ],
+                                "properties": {
+                                    "language_code": {
+                                        "type": "string",
+                                        "example": "es"
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "nullable": true,
+                                        "enum": [
+                                            "draft",
+                                            "published",
+                                            "archived"
+                                        ]
+                                    },
+                                    "slug": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "title": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "content": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object"
+                                        },
+                                        "nullable": true
+                                    },
+                                    "seo_title": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "seo_description": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "seo_keywords": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "canonical_url": {
+                                        "type": "string",
+                                        "format": "url",
+                                        "nullable": true
+                                    },
+                                    "og_title": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "og_description": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "og_image": {
+                                        "type": "string",
+                                        "format": "url",
+                                        "nullable": true
+                                    },
+                                    "structured_data": {
+                                        "type": "object",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Page updated"
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/{tenant}/{version}/tasks": {
+            "post": {
+                "tags": [
+                    "TodoList - Tasks"
+                ],
+                "summary": "Crear una tarea",
+                "operationId": "379afda82fa5a400ad9e7b8bf38a8660",
+                "parameters": [
+                    {
+                        "name": "tenant",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "acme"
+                    },
+                    {
+                        "name": "version",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "v1"
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "id",
+                                    "title",
+                                    "status",
+                                    "priority"
+                                ],
+                                "properties": {
+                                    "id": {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "example": "550e8400-e29b-41d4-a716-446655440040"
+                                    },
+                                    "title": {
+                                        "type": "string",
+                                        "example": "Escribir tests unitarios",
+                                        "maxLength": 255
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "example": "pending",
+                                        "enum": [
+                                            "pending",
+                                            "in_progress",
+                                            "done"
+                                        ]
+                                    },
+                                    "priority": {
+                                        "type": "string",
+                                        "example": "medium",
+                                        "enum": [
+                                            "low",
+                                            "medium",
+                                            "high"
+                                        ]
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "example": "Cobertura mínima del 80%",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Tarea creada",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Error de validación",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/{tenant}/{version}/tasks/{id}": {
+            "get": {
+                "tags": [
+                    "TodoList - Tasks"
+                ],
+                "summary": "Obtener una tarea por ID",
+                "operationId": "4889db3033b0f62b6ecd7c9c4cb817ef",
+                "parameters": [
+                    {
+                        "name": "tenant",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "acme"
+                    },
+                    {
+                        "name": "version",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "v1"
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Tarea encontrada",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/TaskResponse"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No encontrada",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "TodoList - Tasks"
+                ],
+                "summary": "Actualizar una tarea",
+                "operationId": "8621e4989fc53a72b48bf4280ef1fbdf",
+                "parameters": [
+                    {
+                        "name": "tenant",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "acme"
+                    },
+                    {
+                        "name": "version",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "v1"
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "title",
+                                    "status",
+                                    "priority"
+                                ],
+                                "properties": {
+                                    "title": {
+                                        "type": "string",
+                                        "example": "Actualizar dependencias",
+                                        "maxLength": 255
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "example": "in_progress",
+                                        "enum": [
+                                            "pending",
+                                            "in_progress",
+                                            "done"
+                                        ]
+                                    },
+                                    "priority": {
+                                        "type": "string",
+                                        "example": "high",
+                                        "enum": [
+                                            "low",
+                                            "medium",
+                                            "high"
+                                        ]
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "example": "Actualizar a PHP 8.4",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Tarea actualizada",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Error de validación",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "SuccessResponse": {
+                "description": "Standard success response envelope",
+                "properties": {
+                    "success": {
+                        "description": "OpenAPI specification for DB API.\n\nCentral definition file — every annotation here is merged with per-controller\nannotations scanned by l5-swagger (scan paths: app/, src/).",
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "data": {
+                        "example": null,
+                        "nullable": true
+                    },
+                    "message": {
+                        "type": "string",
+                        "example": "Operation completed successfully"
+                    }
+                },
+                "type": "object"
+            },
+            "ErrorResponse": {
+                "description": "Standard error response envelope",
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "example": false
+                    },
+                    "message": {
+                        "type": "string",
+                        "example": "Validation failed"
+                    },
+                    "errors": {
+                        "type": "object",
+                        "example": {
+                            "title": [
+                                "The title field is required."
+                            ]
+                        },
+                        "nullable": true,
+                        "additionalProperties": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "PostResponse": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "title": {
+                        "type": "string"
+                    },
+                    "slug": {
+                        "type": "string"
+                    },
+                    "content": {
+                        "type": "string"
+                    },
+                    "language": {
+                        "type": "string",
+                        "example": "en"
+                    },
+                    "category": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "CategoryResponse": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "name": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "TagResponse": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "name": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "UserResponse": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "name": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "TaskResponse": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "title": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "pending",
+                            "in_progress",
+                            "done"
+                        ]
+                    },
+                    "priority": {
+                        "type": "string",
+                        "enum": [
+                            "low",
+                            "medium",
+                            "high"
+                        ]
+                    },
+                    "description": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "LanguageResponse": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "code": {
+                        "description": "ISO 639-1 language code",
+                        "type": "string",
+                        "example": "en"
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "English"
+                    },
+                    "is_default": {
+                        "type": "boolean",
+                        "example": false
+                    },
+                    "active": {
+                        "type": "boolean",
+                        "example": true
+                    }
+                },
+                "type": "object"
+            },
+            "PageResponse": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "draft",
+                            "published"
+                        ]
+                    },
+                    "language_code": {
+                        "type": "string",
+                        "example": "en"
+                    },
+                    "title": {
+                        "type": "string"
+                    },
+                    "slug": {
+                        "type": "string"
+                    },
+                    "content": {
+                        "description": "Block editor JSON or HTML",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "seo_title": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "seo_description": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "canonical_url": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "og_title": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "og_description": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "og_image": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "FormResponse": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "key": {
+                        "type": "string"
+                    },
+                    "recipient_email": {
+                        "type": "string",
+                        "format": "email",
+                        "nullable": true
+                    },
+                    "active": {
+                        "type": "boolean"
+                    },
+                    "fields": {
+                        "type": "array",
+                        "items": {
+                            "properties": {
+                                "name": {
+                                    "type": "string"
+                                },
+                                "label": {
+                                    "type": "string"
+                                },
+                                "type": {
+                                    "type": "string",
+                                    "enum": [
+                                        "text",
+                                        "email",
+                                        "tel",
+                                        "textarea",
+                                        "select",
+                                        "checkbox"
+                                    ]
+                                },
+                                "required": {
+                                    "type": "boolean"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "Post": {
+                "description": "Translatable blog post",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "title": {
+                        "type": "string"
+                    },
+                    "slug": {
+                        "type": "string"
+                    },
+                    "content": {
+                        "type": "string"
+                    },
+                    "language": {
+                        "type": "string",
+                        "example": "en"
+                    },
+                    "category_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "tag_names": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "seo_title": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "seo_description": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "seo_keywords": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "canonical_url": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "og_title": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "og_description": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "og_image": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "Category": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "name": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "Tag": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "slug": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "Form": {
+                "description": "Dynamic form definition",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "key": {
+                        "description": "Unique form key used in public submission URL",
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "recipient_email": {
+                        "type": "string",
+                        "format": "email",
+                        "nullable": true
+                    },
+                    "active": {
+                        "type": "boolean"
+                    },
+                    "fields": {
+                        "description": "JSON array of field definitions",
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "User": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "name": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "Language": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "code": {
+                        "description": "ISO 639-1",
+                        "type": "string",
+                        "example": "en"
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "English"
+                    },
+                    "native_name": {
+                        "type": "string",
+                        "example": "English"
+                    },
+                    "is_default": {
+                        "type": "boolean"
+                    },
+                    "is_active": {
+                        "type": "boolean"
+                    }
+                },
+                "type": "object"
+            },
+            "Page": {
+                "description": "Translatable page with block editor content",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "draft",
+                            "published",
+                            "archived"
+                        ]
+                    },
+                    "language_code": {
+                        "type": "string",
+                        "example": "en"
+                    },
+                    "slug": {
+                        "type": "string"
+                    },
+                    "title": {
+                        "type": "string"
+                    },
+                    "content": {
+                        "description": "Block editor rows",
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "seo_title": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "seo_description": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "seo_keywords": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "canonical_url": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "og_title": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "og_description": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "og_image": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "structured_data": {
+                        "description": "JSON-LD",
+                        "type": "object",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "Task": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "title": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "pending",
+                            "in_progress",
+                            "done"
+                        ]
+                    },
+                    "priority": {
+                        "type": "string",
+                        "enum": [
+                            "low",
+                            "medium",
+                            "high"
+                        ]
+                    },
+                    "description": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            }
+        },
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "Passport",
+                "description": "Laravel Passport token. Obtain via POST /oauth/token (password grant)."
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Blogging - Posts",
+            "description": "Translatable blog posts with SEO, OG, categories and tags"
+        },
+        {
+            "name": "Blogging - Categories",
+            "description": "Post categories (name only)"
+        },
+        {
+            "name": "Blogging - Tags",
+            "description": "Post tags with auto-generated slugs"
+        },
+        {
+            "name": "Forms",
+            "description": "Dynamic form definitions, public submissions, anti-spam (honeypot + rate-limit)"
+        },
+        {
+            "name": "Identity - Users",
+            "description": "Cross-module user management (always available, no module gate)"
+        },
+        {
+            "name": "Languages",
+            "description": "ISO 639-1 language catalog for translatable content"
+        },
+        {
+            "name": "Pages",
+            "description": "Translatable pages with block editor content and full SEO/OG/JSON-LD metadata"
+        },
+        {
+            "name": "TodoList - Tasks",
+            "description": "Simple tasks with status (pending/in_progress/done) and priority (low/medium/high)"
+        }
+    ]
+}

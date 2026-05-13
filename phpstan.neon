@@ -1,0 +1,9 @@
+parameters:
+    level: 5
+    paths:
+        - src/
+    scanDirectories:
+        - app/
+    scanFiles:
+        - vendor/autoload.php
+        - vendor/laravel/framework/src/Illuminate/Foundation/Http/FormRequest.php

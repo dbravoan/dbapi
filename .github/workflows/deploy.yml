@@ -1,0 +1,267 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches: [ "main" ]
+    paths-ignore:
+      - "docs/**"
+      - "progress/**"
+      - ".agents/**"
+      - "AGENTS.md"
+      - "OPENCODE.md"
+      - "CHECKPOINTS.md"
+      - "README.md"
+      - ".editorconfig"
+      - ".gitattributes"
+      - ".styleci.yml"
+      - "*.md"
+
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  PHP_VERSION: '8.3'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql, dom, filter, json, bcmath
+          tools: composer:v2
+          coverage: none
+
+      - name: Validate composer
+        run: composer validate --strict --no-check-lock
+
+      - name: Get composer cache
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-test-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-test-
+
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: PHPStan analysis
+        run: composer stan -- --no-progress
+        continue-on-error: true
+
+      - name: Run tests
+        run: php artisan test
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: success()
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql, dom, filter, json, bcmath
+          tools: composer:v2
+          coverage: none
+
+      - name: Cache composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/composer
+          key: composer-prod-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-prod-
+
+      - name: Install production dependencies
+        run: |
+          composer install \
+            --no-interaction \
+            --no-progress \
+            --prefer-dist \
+            --optimize-autoloader \
+            --no-dev \
+            --classmap-authoritative
+
+      - name: Create deployment artifact
+        run: |
+          RELEASE_NAME="release-$(date +%Y%m%d%H%M%S)-${{ github.sha }}"
+          echo "RELEASE_NAME=$RELEASE_NAME" >> $GITHUB_ENV
+
+          tar -czf "${{ runner.temp }}/$RELEASE_NAME.tar.gz" \
+            --exclude=.git \
+            --exclude=.github \
+            --exclude=.agents \
+            --exclude=node_modules \
+            --exclude=tests \
+            --exclude='src/*/Tests' \
+            --exclude=testbench.yaml \
+            --exclude=phpunit.xml \
+            --exclude=phpstan.neon \
+            --exclude=webpack.mix.js \
+            --exclude=package.json \
+            --exclude=.env \
+            --exclude=compose.yaml \
+            --exclude=server.php \
+            --exclude=init.sh \
+            --exclude=skills-lock.json \
+            --exclude=feature_list.json \
+            --exclude=CHECKPOINTS.md \
+            --exclude=AGENTS.md \
+            --exclude=OPENCODE.md \
+            --exclude=progress \
+            --exclude=vendor/bin \
+            --exclude=storage \
+            -C "${{ github.workspace }}" .
+
+      - name: Install SSH key
+        run: |
+          mkdir -p ~/.ssh
+          # Write key from secret, strip \r (GitHub secrets mangle CRLF),
+          # and ensure it ends with a newline.
+          echo "${{ secrets.VPS_SSH_KEY }}" | tr -d '\r' > ~/.ssh/id_rsa
+          sed -i -e '$a\' ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Upload artifact to VPS
+        run: |
+          scp -P ${{ secrets.VPS_PORT }} -i ~/.ssh/id_rsa \
+            -o StrictHostKeyChecking=no \
+            -o UserKnownHostsFile=/dev/null \
+            "${{ runner.temp }}/${{ env.RELEASE_NAME }}.tar.gz" \
+            ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/tmp/
+
+      - name: Deploy & activate
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          script: |
+            bash -l <<'BASH_EOF'
+            set -euo pipefail
+
+            APP_DIR="${{ secrets.VPS_DIR }}"
+            RELEASES_DIR="$APP_DIR/releases"
+            CURRENT_DIR="$APP_DIR/current"
+            RELEASE_NAME="${{ env.RELEASE_NAME }}"
+            RELEASE_DIR="$RELEASES_DIR/$RELEASE_NAME"
+
+            echo "Using PHP: $(php -v | head -1)"
+
+            echo "::group::1. Prepare directories"
+            mkdir -p "$RELEASES_DIR" \
+              "$APP_DIR/storage/app/public" \
+              "$APP_DIR/storage/framework/cache/data" \
+              "$APP_DIR/storage/framework/views" \
+              "$APP_DIR/storage/framework/sessions" \
+              "$APP_DIR/storage/logs"
+            echo "::endgroup::"
+
+            echo "::group::2. Extract artifact"
+            mkdir -p "$RELEASE_DIR"
+            tar -xzf "/tmp/$RELEASE_NAME.tar.gz" -C "$RELEASE_DIR"
+            rm -f "/tmp/$RELEASE_NAME.tar.gz"
+            echo "::endgroup::"
+
+            echo "::group::3. Link persistent resources"
+            rm -rf "$RELEASE_DIR/storage"
+            ln -sfn "$APP_DIR/storage" "$RELEASE_DIR/storage"
+            chmod -R 775 "$APP_DIR/storage"
+
+            if [ -f "$APP_DIR/.env" ]; then
+              ln -sfn "$APP_DIR/.env" "$RELEASE_DIR/.env"
+              # Repara primer deploy defectuoso: APP_KEY vacía
+              if grep -q '^APP_KEY=$' "$APP_DIR/.env" 2>/dev/null; then
+                php "$RELEASE_DIR/artisan" key:generate --force
+                cp "$RELEASE_DIR/.env" "$APP_DIR/.env"
+              fi
+            else
+              echo "::warning::No .env at $APP_DIR/.env — creating from .env.example"
+              cp "$RELEASE_DIR/.env.example" "$RELEASE_DIR/.env"
+              php "$RELEASE_DIR/artisan" key:generate --force
+              cp "$RELEASE_DIR/.env" "$APP_DIR/.env"
+            fi
+            echo "::endgroup::"
+
+            echo "::group::4. Maintenance mode (on)"
+            if [ -L "$CURRENT_DIR" ] && [ -f "$CURRENT_DIR/artisan" ]; then
+              php "$CURRENT_DIR/artisan" down --retry=30 --quiet 2>/dev/null || true
+            fi
+            echo "::endgroup::"
+
+            echo "::group::5. Activate new release"
+            ln -sfn "$RELEASE_DIR" "$CURRENT_DIR.tmp"
+            mv -fT "$CURRENT_DIR.tmp" "$CURRENT_DIR"
+            cd "$CURRENT_DIR"
+            echo "::endgroup::"
+
+            echo "::group::6. Laravel boot"
+            php artisan storage:link --quiet 2>/dev/null || true
+
+            chmod -R 775 "$RELEASE_DIR/bootstrap/cache"
+
+            php artisan config:cache
+            php artisan route:cache
+            php artisan view:cache
+            php artisan event:cache
+
+            php artisan migrate --force
+
+            if [ ! -f "$APP_DIR/storage/oauth-private.key" ]; then
+              php artisan passport:keys --force
+              cp storage/oauth-*.key "$APP_DIR/storage/" || true
+            fi
+
+            php artisan l5-swagger:generate || true
+
+            chmod -R 775 "$RELEASE_DIR/bootstrap/cache"
+            chmod -R 775 "$APP_DIR/storage"
+            echo "::endgroup::"
+
+            echo "::group::7. Health check"
+            php artisan up --quiet
+
+            sleep 3
+            APP_URL=$(php -r "echo config('app.url');" 2>/dev/null || echo "http://localhost")
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+              --connect-timeout 5 --max-time 10 \
+              "$APP_URL/" 2>/dev/null || echo "000")
+
+            if [ "$STATUS" = "000" ]; then
+              echo "::warning::Could not reach $APP_URL — check web server config"
+            elif [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 500 ]; then
+              echo "✅ Health check passed (HTTP $STATUS)"
+            else
+              echo "::warning::Health check returned HTTP $STATUS"
+            fi
+            echo "::endgroup::"
+
+            echo "::group::8. Cleanup (keep last 3)"
+            cd "$RELEASES_DIR"
+            ls -1t | tail -n +4 | xargs -r rm -rf
+            echo "Active releases:"
+            ls -1t | head -5
+            echo "::endgroup::"
+
+            echo ""
+            echo "✅ Deployed: $RELEASE_NAME"
+            BASH_EOF
+

@@ -1,0 +1,157 @@
+{
+  "project": "dbapi",
+  "description": "Laravel 13 DDD/CQRS multitenant API on top of dbravoan/dba-ddd-skeleton. Feature list is the single source of truth for what to work on. One feature in_progress at a time, max.",
+  "rules": {
+    "one_feature_at_a_time": true,
+    "require_tests_to_close": true,
+    "require_init_sh_green_to_close": true,
+    "valid_status": ["pending", "in_progress", "done", "blocked"]
+  },
+  "features": [
+    {
+      "id": 1,
+      "name": "fix_skill_namespace",
+      "title": "Fix the dba-ddd-skeleton skill namespace map",
+      "description": "The skill at .agents/skills/dba-ddd-skeleton/SKILL.md (section 11) says the package namespace is 'Dbravoan\\DbaSkeletonDdd\\…'. The real namespace used by every file in vendor/ and src/ is 'Dba\\DddSkeleton\\…'. This drift makes future agents hallucinate 'use' statements that won't autoload.",
+      "acceptance": [
+        "Section 11 of .agents/skills/dba-ddd-skeleton/SKILL.md uses 'Dba\\DddSkeleton\\…' everywhere",
+        "No occurrence of the string 'Dbravoan\\DbaSkeletonDdd' anywhere under .agents/skills/",
+        "Grep across the skill for 'Dba\\DddSkeleton' returns the expected base paths (Shared/Domain, Shared/Infrastructure, etc.)"
+      ],
+      "status": "done"
+    },
+    {
+      "id": 2,
+      "name": "register_search_handlers",
+      "title": "Register Search*ByCriteria query handlers in DomainServiceProvider",
+      "description": "Four SearchByCriteria query handlers exist (Categorys, Posts, Tags, Users) but none of them is registered in app/Providers/DomainServiceProvider.php, so the QueryBus cannot resolve them at runtime. Their controllers are also unrouted today (see feature 3); registering the handlers is a prerequisite to using them.",
+      "acceptance": [
+        "DomainServiceProvider lists: SearchCategorysByCriteriaQueryHandler, SearchPostsByCriteriaQueryHandler, SearchTagsByCriteriaQueryHandler, SearchUsersByCriteriaQueryHandler",
+        "A unit test (or a manual `php artisan tinker` confirmation captured in the impl report) shows the QueryBus resolves each handler without throwing",
+        "No drift: the order/grouping of $queryHandlers stays consistent with the current alphabetical-ish pattern"
+      ],
+      "status": "done"
+    },
+    {
+      "id": 3,
+      "name": "wire_search_and_delete_routes",
+      "title": "Wire Search*ByCriteria and Delete*Controller routes (or remove dead code)",
+      "description": "Eight controllers in src/ are not referenced by routes/api.php: SearchCategorysByCriteriaController, SearchPostsByCriteriaController, SearchTagsByCriteriaController, SearchUsersByCriteriaController, DeleteCategoryController, DeletePostController, DeleteTagController, DeleteUserController. Additionally, there is no `Application/Delete/` use case in src/ — the Delete controllers depend on nothing. Decide per controller: wire it up (and create the missing use case for Delete) OR delete the controller as dead code. Document the decision in the impl report.",
+      "acceptance": [
+        "For every controller listed: it is either referenced in routes/api.php under the correct module gate (read endpoints open, write endpoints behind auth:api), OR it has been deleted",
+        "Any newly wired endpoint has at least one Feature test (200 happy path + 401 if write + 403 if module gate)",
+        "Delete use cases, if kept, exist under src/{Context}/{Agg}/Application/Delete/ with a Command + Handler and the handler is registered in DomainServiceProvider",
+        "README.md route table is updated to reflect what is actually exposed"
+      ],
+      "status": "done"
+    },
+    {
+      "id": 4,
+      "name": "rename_categorys_response",
+      "title": "Rename CategorysResponse → CategoriesResponse (correct plural)",
+      "description": "Implemented as part of feature 11 (bug_burndown_2026_05_12, audit finding #18). The CategorysResponse class plus the entire SearchCategorys* pipeline were renamed to use the correct English plural (CategoriesResponse, SearchCategoriesByCriteriaQuery, SearchCategoriesByCriteriaQueryHandler, SearchCategoriesByCriteriaController, CountCategoriesByCriteriaQuery + Handler + Response). The search controller's response message was updated to 'Categories searched successfully'. See progress/impl_bug_burndown_2026_05_12.md for the diff summary.",
+      "acceptance": [
+        "File is renamed to CategoriesResponse.php",
+        "Class, property, and accessor all use `categories`",
+        "Every usage in src/ is updated (grep -r CategorysResponse returns 0 matches; grep -r 'categorys' returns 0 matches inside src/)",
+        "PHPUnit suite is green"
+      ],
+      "status": "done"
+    },
+    {
+      "id": 5,
+      "name": "standardize_controller_response",
+      "title": "Standardize controller responses on ApiController helpers",
+      "description": "CreateTaskController returns a raw `new JsonResponse(['success' => true, 'data' => null, 'message' => '...'], 201)` instead of using `$this->sendResponse(...)` like the rest of the codebase. Audit all controllers under src/**/Infrastructure/Controller/ and migrate any raw JsonResponse to the ApiController helpers (sendResponse / sendError). The wire-format must stay identical (`success`, `data`, `message`) — that's the API contract; only the call site changes.",
+      "acceptance": [
+        "No `new JsonResponse(` inside src/**/Infrastructure/Controller/ except where the helper genuinely cannot express the response",
+        "Every controller uses sendResponse() for 2xx and sendError() for 4xx/5xx",
+        "All Feature tests still pass (response shape unchanged)"
+      ],
+      "status": "done"
+    },
+    {
+      "id": 6,
+      "name": "feature_tests_for_routes",
+      "title": "Expand Feature tests to cover Post, Category, Tag, Page, Form, User, Language routes",
+      "description": "Today only TaskRouteTest covers a route end-to-end (find + create + auth + module-gate). Replicate that pattern for the other modules. Use mocks for CommandBus / QueryBus and the TenantResolverInterface — never hit the database. Each new test file should cover at minimum: 404 on find, 200 on find with mocked response, 401 on write without auth, 422 on validation, 403 when module gate is missing.",
+      "acceptance": [
+        "tests/Feature/PostRouteTest.php exists and passes",
+        "tests/Feature/CategoryRouteTest.php exists and passes",
+        "tests/Feature/TagRouteTest.php exists and passes",
+        "tests/Feature/PageRouteTest.php exists and passes",
+        "tests/Feature/FormRouteTest.php exists and passes (covers submit + create + find)",
+        "tests/Feature/UserRouteTest.php exists and passes",
+        "tests/Feature/LanguageRouteTest.php exists and passes",
+        "Each test file uses the same mocking pattern as TaskRouteTest"
+      ],
+      "status": "done"
+    },
+    {
+      "id": 7,
+      "name": "update_readme_routes",
+      "title": "Update README.md route table to match routes/api.php",
+      "description": "README.md lists DELETE routes that don't exist and omits pages/tasks/forms/languages. Bring it back in sync with the actual routes/api.php content and explicitly call out which routes are read-only-open vs auth:api vs module-gated.",
+      "acceptance": [
+        "README route section enumerates every route currently in routes/api.php",
+        "No route in README that is absent from routes/api.php",
+        "Auth and module-gate requirements are explicit per route",
+        "GUIDE.md is also reviewed; any cross-references stay consistent"
+      ],
+      "status": "done"
+    },
+    {
+      "id": 8,
+      "name": "migrate_phpunit_config",
+      "title": "Migrate phpunit.xml to PHPUnit 11 schema",
+      "description": "README itself flags this: phpunit.xml uses the legacy schema. Run `./vendor/bin/sail artisan test -- --migrate-configuration` (or phpunit --migrate-configuration) and commit the new config. Verify the testsuite still discovers tests in both tests/ and src/**/Tests/.",
+      "acceptance": [
+        "phpunit.xml uses the PHPUnit 11 schema (no deprecation warnings on `php artisan test`)",
+        "`php artisan test` discovers ≥ all the tests it discovered before the migration (count from history.md)",
+        "No drift: tests/Unit, tests/Feature, and src/**/Tests/* are all still covered"
+      ],
+      "status": "done"
+    },
+    {
+      "id": 9,
+      "name": "add_composer_scripts",
+      "title": "Add `composer test` and `composer lint` scripts",
+      "description": "composer.json has no `scripts` entries for the inner dev loop. Add at least: `composer test` → `@php artisan test`. If phpstan is feasible (it's mentioned in the project-development skill), add `composer stan` → `./vendor/bin/phpstan analyse src/ --level 9 --no-progress` AND a minimal phpstan.neon at the project root. Keep it pragmatic: don't introduce phpstan if the codebase isn't level-9 clean today — degrade to a lower level and document it.",
+      "acceptance": [
+        "composer.json has a `scripts.test` entry that runs the full suite",
+        "If phpstan is added: phpstan.neon exists and `composer stan` exits 0",
+        "If phpstan is dropped for now: the impl report documents the reason"
+      ],
+      "status": "done"
+    },
+    {
+      "id": 10,
+      "name": "module_gate_for_identity",
+      "title": "Decide on a module gate for Identity/User routes",
+      "description": "All other modules sit behind `require.module:<name>`. The Identity/User routes sit outside that gate, with the comment 'users are cross-module'. That is a deliberate design choice but it should be either (a) documented explicitly in docs/architecture.md as 'Identity is a cross-cutting context and is always available', OR (b) gated behind a synthetic module like `identity` that is part of every tenant's default enabled_modules. Pick one, document the decision, and apply it.",
+      "acceptance": [
+        "docs/architecture.md has an explicit section explaining Identity's gating decision",
+        "If gating is introduced, CreateTenantCommand defaults include the identity module",
+        "Existing feature tests still pass (UserRouteTest from feature 6 must reflect the chosen behaviour)"
+      ],
+      "status": "done"
+    },
+    {
+      "id": 11,
+      "name": "bug_burndown_2026_05_12",
+      "title": "Project-wide bug burn-down (45 findings from audit_bugs_2026-05-12.md)",
+      "description": "Fix every bug catalogued in progress/audit_bugs_2026-05-12.md (45 items: 11 critical, 13 high, 13 medium, 8 low). The implementer must work the items in 8 logical groups (in this order) and run the test suite between groups: (G1) crash-fix #7 — Tag::create() arity + missing slug propagation through CreateTagCommand/Controller/Handler; (G2) silent-no-op #9/#10/#11 — implement Category::rename/Tag::rename/User::rename (each recording a *RenamedDomainEvent) and call them from UpdateXxxCommandHandler; (G3) wrong-event #14/#15 — replace Post/Task update factory with proper reconstitution/mutators recording *UpdatedDomainEvent (or at minimum NOT *CreatedDomainEvent); (G4) broken Search/Delete pipeline #1–#6, #12, #13 — per controller: either build the missing use case end-to-end (Command/Query + Handler + register in DomainServiceProvider + route in api.php + at least one feature test) OR delete the dead controller and matching artifacts; (G5) Forms #16, #20, #21, #23, #32, #35 — add FormCreatedDomainEvent + FormSubmittedDomainEvent, throw typed exceptions mapped to 404/422 instead of InvalidArgumentException (raw 500), unify honeypot field name (pick `honeypot`, update SpamProtection AND OpenAPI), introduce FormId/FormKey/FormName VOs, fix save() id-vs-key ambiguity by returning the persisted id to the create handler/controller; (G6) response-envelope sweep #17 — migrate all 8 Create controllers from raw `new JsonResponse(...)` to `$this->sendResponse(...)` keeping the exact same wire shape (success/data/message); (G7) repository countByCriteria join-mismatch #36, #37 — apply the same join used by searchByCriteria, OR maintain two distinct field maps; (G8) sweep — #18 (Categorys → Categories), #19 (Form VOs — only if not done in G5), #25 (Post::toPrimitives main/translation split), #26/#27 (PostCreatedDomainEvent name vs title), #28 (TagResponse.slug), #29/#30/#31 (final readonly DTOs/Commands/PageTranslation), #33 (Tag/Category UpdateCommand non-nullable), #34 (final readonly order in Language VOs), #38/#39/#40/#41 (app/Models declare strict_types, final, getTable return types, doc-block on BlogPost fillable), #42/#43/#44/#45 (delete or rewrite ExampleTest, pin event payloads, add Tag event assertion). Cross-cutting: the audit doc lists feature 4 as already-pending — implement it as part of G8 and mark feature 4 as 'done' in this same session. Keep diffs surgical; do not refactor beyond the listed items. Update feature_list.json status for features 4 alongside this one.",
+      "acceptance": [
+        "Every individual finding in progress/audit_bugs_2026-05-12.md has a one-line entry in progress/impl_bug_burndown_2026_05_12.md mapping it to: fixed | wontfix-with-reason | deferred-with-new-feature-id",
+        "All 11 CRITICAL items (#1–#11) are resolved (fixed or controller/code removed). No new code references the missing classes.",
+        "All 13 HIGH items are resolved.",
+        "All 13 MEDIUM and 8 LOW items are resolved unless explicitly deferred in the impl report with a clear rationale and a new feature_list entry tracking each deferral.",
+        "Grep proofs in the impl report: `grep -r 'CategorysByCriteriaSearcher\\|PostsByCriteriaSearcher\\|TagsByCriteriaSearcher\\|UsersByCriteriaSearcher\\|CountCategorysByCriteriaQuery\\|CountPostsByCriteriaQuery\\|CountTagsByCriteriaQuery\\|CountUsersByCriteriaQuery\\|Dbravoan\\\\DbaSkeletonDdd' src/ app/` returns 0 matches; `grep -r 'new JsonResponse(\\[' src/**/Infrastructure/Controller/` returns 0 matches; `grep -r 'Categorys' src/ app/` returns 0 matches (no English-plural debt left).",
+        "`php artisan test` (or sail) is green; new tests cover: Tag create with slug, all three rename flows produce the proper Renamed event, Post/Task update produces an Updated event (not Created), Form submission returns 404 when form is absent and 422 when validation fails, honeypot tripped via `honeypot` field returns the correct error, countByCriteria with a filter on a translatable field succeeds for Post and Page.",
+        "`./init.sh` exits 0 from inside Sail.",
+        "feature_list.json: feature 4 (rename_categorys_response) is flagged `done` if its work was completed in G8; feature 11 itself flips to `done` only after the reviewer approves."
+      ],
+      "status": "done"
+    }
+  ]
+}
